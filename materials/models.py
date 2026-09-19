@@ -2,6 +2,9 @@ from django.db import models
 
 
 class Course(models.Model):
+    """
+    Хранит информацию о курсе.
+    """
     name = models.CharField(
         max_length=100, verbose_name="Название", help_text="Укажите название курса"
     )
@@ -28,6 +31,9 @@ class Course(models.Model):
 
 
 class Lesson(models.Model):
+    """
+    Хранит информацию об отдельном уроке, связанном с курсом :model:`materials.Course`.
+    """
     name = models.CharField(
         max_length=100, verbose_name="Название", help_text="Укажите название урока"
     )

@@ -4,6 +4,12 @@ from phonenumber_field.modelfields import PhoneNumberField
 
 
 class User(AbstractUser):
+    """
+    Кастомная модель пользователя системы обучения.
+
+    Авторизация в системе происходит по адресу электронной почты вместо username.
+    Хранит личные данные пользователя: аватар, контактный телефон и город проживания.
+    """
     username = None
 
     email = models.EmailField(
