@@ -2,6 +2,7 @@ from rest_framework import generics, viewsets
 
 from materials.models import Course, Lesson
 from materials.serializers import CourseSerializer, LessonSerializer
+from users.permissions import IsModer, IsOwner, IsNotModer
 
 
 class CourseViewSet(viewsets.ModelViewSet):
@@ -14,6 +15,18 @@ class CourseViewSet(viewsets.ModelViewSet):
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
 
+    def get_permissions(self):
+        # Создавать курсы модератор не может
+        if self.action == "create":
+            return [IsNotModer()]
+        # Просматривать список, детали и редактировать могут и модераторы, и владельцы курса
+        elif self.action in ["retrieve", "update", "partial_update"]:
+            return [IsModer()]
+        # Удалять курсы модератор не может, только владелец
+        if self.action == "destroy":
+            return [IsNotModer()]
+        return super().get_permissions()
+
 
 class LessonCreateAPIView(generics.CreateAPIView):
     """
@@ -24,6 +37,7 @@ class LessonCreateAPIView(generics.CreateAPIView):
     """
     queryset = Lesson.objects.all()
     serializer_class = LessonSerializer
+    permission_classes = [IsNotModer]
 
 
 class LessonListAPIView(generics.ListAPIView):
@@ -37,6 +51,7 @@ class LessonListAPIView(generics.ListAPIView):
     serializer_class = LessonSerializer
 
 
+
 class LessonUpdateAPIView(generics.UpdateAPIView):
     """
     Редактирование существующего урока.
@@ -46,6 +61,7 @@ class LessonUpdateAPIView(generics.UpdateAPIView):
     """
     queryset = Lesson.objects.all()
     serializer_class = LessonSerializer
+    permission_classes = [IsModer]
 
 
 class LessonRetrieveAPIView(generics.RetrieveAPIView):
@@ -56,6 +72,7 @@ class LessonRetrieveAPIView(generics.RetrieveAPIView):
     """
     queryset = Lesson.objects.all()
     serializer_class = LessonSerializer
+    permission_classes = [IsModer]
 
 
 class LessonDestroyAPIView(generics.DestroyAPIView):
@@ -66,3 +83,4 @@ class LessonDestroyAPIView(generics.DestroyAPIView):
     Связанный курс при этом не удаляется.
     """
     queryset = Lesson.objects.all()
+    permission_classes = [IsNotModer]

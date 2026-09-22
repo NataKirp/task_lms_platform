@@ -21,7 +21,7 @@ class UserViewSet(ModelViewSet):
         if self.action == "create":
             return UserRegisterSerializer
         if self.action in ["retrieve", "update", "partial_update"]:
-            if self.get_object() == self.request.user:
+            if self.get_object() == self.request.user or self.request.user.is_superuser:
                 return UserProfileSerializer
         return UserReadOnlySerializer
 
