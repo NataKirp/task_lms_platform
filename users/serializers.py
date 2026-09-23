@@ -27,11 +27,25 @@ class UserRegisterSerializer(ModelSerializer):
         return user
 
 
+class PaymentSerializer(ModelSerializer):
+    """
+    Сериализатор для модели платежей.
+
+    Выводит полную информацию о совершенных транзакциях.
+    """
+
+    class Meta:
+        model = Payment
+        fields = "__all__"
+
+
 class UserProfileSerializer(ModelSerializer):
     """
-    Сериализатор для СВОЕГО профиля (Доп. задание №2).
+    Сериализатор для СВОЕГО профиля.
     Включает полную информацию, фамилию и историю платежей.
     """
+
+    payments = PaymentSerializer(many=True, read_only=True)
 
     class Meta:
         model = User
@@ -43,27 +57,16 @@ class UserProfileSerializer(ModelSerializer):
             "phone_number",
             "city",
             "avatar",
+            "payments"
         ]
 
 
 class UserReadOnlySerializer(ModelSerializer):
     """
-    Сериализатор для ЧУЖОГО профиля (Доп. задание №3).
+    Сериализатор для ЧУЖОГО профиля.
     Скрывает пароль, фамилию и историю платежей. Доступна только общая информация.
     """
 
     class Meta:
         model = User
         fields = ["id", "email", "city"]
-
-
-class PaymentSerializer(ModelSerializer):
-    """
-    Сериализатор для модели платежей.
-
-    Выводит полную информацию о совершенных транзакциях.
-    """
-
-    class Meta:
-        model = Payment
-        fields = "__all__"

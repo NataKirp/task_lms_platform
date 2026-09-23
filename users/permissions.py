@@ -1,4 +1,5 @@
 from rest_framework import permissions
+from rest_framework.decorators import permission_classes
 
 
 class IsModer(permissions.BasePermission):
@@ -25,3 +26,15 @@ class IsOwner(permissions.BasePermission):
                 return True
             return obj.owner == request.user
         return False
+
+
+class IsAccountOwner(permissions.BasePermission):
+    """
+    Разрешает доступ к редактированию и удалению только владельцу
+    этого профиля (аккаунта).
+    """
+
+    message = "Вы не можете изменять или удалять чужой профиль."
+
+    def has_object_permission(self, request, view, obj):
+        return request.user and request.user.is_authenticated and obj == request.user
