@@ -7,15 +7,16 @@ from users.models import User
 
 class Command(BaseCommand):
     help = "Создает суперпользователя"
-    def handle(self, *args, **options):
-        self.stdout.write(self.style.WARNING('--- Создание суперпользователя ---'))
 
-        email = input('Email: ').strip()
+    def handle(self, *args, **options):
+        self.stdout.write(self.style.WARNING("--- Создание суперпользователя ---"))
+
+        email = input("Email: ").strip()
         # скрываем вводимые символы в терминале
-        password = getpass.getpass('Пароль: ')
+        password = getpass.getpass("Пароль: ")
 
         if not email:
-            self.stdout.write(self.style.ERROR('Ошибка: Email не может быть пустым!'))
+            self.stdout.write(self.style.ERROR("Ошибка: Email не может быть пустым!"))
             return
 
         try:
@@ -26,6 +27,8 @@ class Command(BaseCommand):
             user.is_superuser = True
             user.save()
 
-            self.stdout.write(self.style.SUCCESS(f'Суперпользователь {user.email} успешно создан!'))
+            self.stdout.write(
+                self.style.SUCCESS(f"Суперпользователь {user.email} успешно создан!")
+            )
         except Exception as e:
-            self.stdout.write(self.style.ERROR(f'Произошла ошибка при создании: {e}'))
+            self.stdout.write(self.style.ERROR(f"Произошла ошибка при создании: {e}"))

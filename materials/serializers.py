@@ -24,12 +24,13 @@ class CourseSerializer(ModelSerializer):
     Выводит базовую информацию о курсе и автоматически рассчитывает
     общее количество связанных с ним уроков и детальную информацию по всем урокам одновременно.
     """
+
     lessons_count = SerializerMethodField()
     lessons = LessonSerializer(many=True, read_only=True)
 
     class Meta:
         model = Course
-        fields = ["id", "name", "description", "lessons_count", "lessons"]
+        fields = ["id", "name", "owner", "description", "lessons_count", "lessons"]
 
     def get_lessons_count(self, course):
         """

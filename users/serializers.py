@@ -11,11 +11,17 @@ class UserRegisterSerializer(ModelSerializer):
     class Meta:
         model = User
         fields = ["email", "password", "phone_number", "city"]
-        extra_kwargs = {"password": {"write_only": True}}  # Пароль будет приниматься, но не будет отдаваться в JSON
+        extra_kwargs = {
+            "password": {"write_only": True}
+        }  # Пароль будет приниматься, но не будет отдаваться в JSON
 
     def create(self, validated_data):
-        password = validated_data.pop("password")  # Извлекаем пароль из валидированных данных
-        user = User(**validated_data)  # Создаем пользователя со всеми оставшимися полями
+        password = validated_data.pop(
+            "password"
+        )  # Извлекаем пароль из валидированных данных
+        user = User(
+            **validated_data
+        )  # Создаем пользователя со всеми оставшимися полями
         user.set_password(password)  # Хэшируем и сохраняем пароль
         user.save()
         return user
@@ -29,7 +35,15 @@ class UserProfileSerializer(ModelSerializer):
 
     class Meta:
         model = User
-        fields = ["id", "email", "first_name", "last_name", "phone_number", "city", "avatar"]
+        fields = [
+            "id",
+            "email",
+            "first_name",
+            "last_name",
+            "phone_number",
+            "city",
+            "avatar",
+        ]
 
 
 class UserReadOnlySerializer(ModelSerializer):

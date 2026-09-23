@@ -5,7 +5,8 @@ from rest_framework.permissions import AllowAny
 from rest_framework.viewsets import ModelViewSet
 
 from users.models import Payment, User
-from users.serializers import PaymentSerializer, UserRegisterSerializer, UserProfileSerializer, UserReadOnlySerializer
+from users.serializers import (PaymentSerializer, UserProfileSerializer,
+                               UserReadOnlySerializer, UserRegisterSerializer)
 
 
 class UserViewSet(ModelViewSet):
@@ -40,8 +41,11 @@ class PaymentListAPIView(generics.ListAPIView):
     Возвращает перечень платежей с базовой информацией.
     Позволяет администраторам и пользователям просматривать историю оплат.
     """
+
     queryset = Payment.objects.all()
     serializer_class = PaymentSerializer
     filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_fields = ["payment_method", "course_paid", "single_lesson_paid"]
-    ordering_fields = ["payment_date", ]
+    ordering_fields = [
+        "payment_date",
+    ]
