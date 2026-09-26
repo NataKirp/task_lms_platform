@@ -5,6 +5,7 @@ class Course(models.Model):
     """
     Хранит информацию о курсе.
     """
+
     name = models.CharField(
         max_length=100, verbose_name="Название", help_text="Укажите название курса"
     )
@@ -21,6 +22,14 @@ class Course(models.Model):
         verbose_name="Превью",
         help_text="Загрузите изображение",
     )
+    owner = models.ForeignKey(
+        "users.User",
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        verbose_name="Создатель",
+        help_text="Укажите создателя курса",
+    )
 
     class Meta:
         verbose_name = "Курс"
@@ -34,6 +43,7 @@ class Lesson(models.Model):
     """
     Хранит информацию об отдельном уроке, связанном с курсом :model:`materials.Course`.
     """
+
     name = models.CharField(
         max_length=100, verbose_name="Название", help_text="Укажите название урока"
     )
@@ -64,6 +74,14 @@ class Lesson(models.Model):
         verbose_name="Курс",
         help_text="Выберите курс",
         related_name="lessons",
+    )
+    owner = models.ForeignKey(
+        "users.User",
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        verbose_name="Создатель",
+        help_text="Укажите создателя урока",
     )
 
     class Meta:
