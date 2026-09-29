@@ -57,7 +57,8 @@ class UserProfileSerializer(ModelSerializer):
             "phone_number",
             "city",
             "avatar",
-            "payments"
+            "payments",
+            "groups",
         ]
 
 

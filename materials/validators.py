@@ -5,7 +5,7 @@ from rest_framework import serializers
 
 def validate_youtube_only(value):
     """
-        Проверяет, что если в тексте/ссылке есть URL, то он ведет исключительно на youtube.com или youtu.be.
+    Проверяет, что если в тексте/ссылке есть URL, то он ведет исключительно на youtube.com или youtu.be.
     """
     if value:
         url_pattern = r"https?://[^\s]+"

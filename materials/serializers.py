@@ -1,6 +1,6 @@
 from django.template.context_processors import request
-from rest_framework.fields import SerializerMethodField
 from rest_framework import serializers
+from rest_framework.fields import SerializerMethodField
 
 from materials.models import Course, Lesson, Subscription
 from materials.validators import validate_youtube_only
@@ -18,7 +18,7 @@ class LessonSerializer(serializers.ModelSerializer):
         validators=[validate_youtube_only],
         required=False,
         allow_null=True,
-        allow_blank=True
+        allow_blank=True,
     )
 
     class Meta:
@@ -38,7 +38,7 @@ class CourseSerializer(serializers.ModelSerializer):
         validators=[validate_youtube_only],
         required=False,
         allow_null=True,
-        allow_blank=True
+        allow_blank=True,
     )
     lessons_count = SerializerMethodField()
     lessons = LessonSerializer(many=True, read_only=True)
@@ -46,7 +46,15 @@ class CourseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Course
-        fields = ["id", "name", "owner", "description", "lessons_count", "lessons", "is_subscribed"]
+        fields = [
+            "id",
+            "name",
+            "owner",
+            "description",
+            "lessons_count",
+            "lessons",
+            "is_subscribed",
+        ]
 
     def get_lessons_count(self, course):
         """
