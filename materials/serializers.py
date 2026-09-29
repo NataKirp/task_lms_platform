@@ -1,10 +1,11 @@
 from rest_framework.fields import SerializerMethodField
-from rest_framework.serializers import ModelSerializer
+from rest_framework import serializers
 
 from materials.models import Course, Lesson
+from materials.validators import validate_youtube_only
 
 
-class LessonSerializer(ModelSerializer):
+class LessonSerializer(serializers.ModelSerializer):
     """
     Сериализатор для модели урока.
 
@@ -12,12 +13,19 @@ class LessonSerializer(ModelSerializer):
     внешнего ключа связи с родительским курсом.
     """
 
+    video_url = serializers.CharField(
+        validators=[validate_youtube_only],
+        required=False,
+        allow_null=True,
+        allow_blank=True
+    )
+
     class Meta:
         model = Lesson
         fields = "__all__"
 
 
-class CourseSerializer(ModelSerializer):
+class CourseSerializer(serializers.ModelSerializer):
     """
     Сериализатор для модели курса.
 
@@ -25,6 +33,12 @@ class CourseSerializer(ModelSerializer):
     общее количество связанных с ним уроков и детальную информацию по всем урокам одновременно.
     """
 
+    description = serializers.CharField(
+        validators=[validate_youtube_only],
+        required=False,
+        allow_null=True,
+        allow_blank=True
+    )
     lessons_count = SerializerMethodField()
     lessons = LessonSerializer(many=True, read_only=True)
 
