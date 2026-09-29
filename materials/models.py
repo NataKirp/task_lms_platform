@@ -1,5 +1,7 @@
 from django.db import models
 
+from config import settings
+
 
 class Course(models.Model):
     """
@@ -90,3 +92,37 @@ class Lesson(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class Subscription(models.Model):
+    """
+    Модель подписки на обновления курса.
+
+    Обеспечивает связь между пользователем :model:`users.User` и курсом
+    :model:`materials.Course`, позволяя отслеживать подписки на обновления
+    учебных материалов. Уникальность связки гарантирует отсутствие
+    дублирующих подписок.
+    """
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="subscriptions",
+        verbose_name="Пользователь",
+        help_text="Ссылка на пользователя, оформившего подписку",
+    )
+    course = models.ForeignKey(
+        Course,
+        on_delete=models.CASCADE,
+        related_name="subscriptions",
+        verbose_name="Курс в подписке",
+        help_text="Ссылка на курс, на который оформлена подписка",
+    )
+
+    class Meta:
+        verbose_name = "Подписка"
+        verbose_name_plural = "Подписки"
+        unique_together = ("user", "course")
+
+    def __str__(self):
+        return f"{self.user} - {self.course.name}"

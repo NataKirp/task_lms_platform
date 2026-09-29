@@ -1,7 +1,8 @@
+from django.template.context_processors import request
 from rest_framework.fields import SerializerMethodField
 from rest_framework import serializers
 
-from materials.models import Course, Lesson
+from materials.models import Course, Lesson, Subscription
 from materials.validators import validate_youtube_only
 
 
@@ -41,13 +42,23 @@ class CourseSerializer(serializers.ModelSerializer):
     )
     lessons_count = SerializerMethodField()
     lessons = LessonSerializer(many=True, read_only=True)
+    is_subscribed = SerializerMethodField()
 
     class Meta:
         model = Course
-        fields = ["id", "name", "owner", "description", "lessons_count", "lessons"]
+        fields = ["id", "name", "owner", "description", "lessons_count", "lessons", "is_subscribed"]
 
     def get_lessons_count(self, course):
         """
         Возвращает общее количество уроков, привязанных к данному курсу.
         """
         return course.lessons.count()
+
+    def get_is_subscribed(self, course):
+        """
+        Динамически определяет, подписан ли текущий пользователь на данный курс.
+        """
+        user = self.context.get("request").user
+        if not request or user.is_anonymous:
+            return False
+        return bool(Subscription.objects.filter(user=user, course=course).exists())
