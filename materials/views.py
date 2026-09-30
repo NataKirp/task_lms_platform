@@ -1,7 +1,12 @@
+from django.db.models import Q  # Импортируем оператор Q для сложных запросов
 from rest_framework import generics, viewsets
+from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from materials.models import Course, Lesson
+from materials.models import Course, Lesson, Subscription
+from materials.pagination import CustomPagination
 from materials.serializers import CourseSerializer, LessonSerializer
 from users.permissions import IsModer, IsOwner
 
@@ -15,6 +20,7 @@ class CourseViewSet(viewsets.ModelViewSet):
     """
 
     serializer_class = CourseSerializer
+    pagination_class = CustomPagination
 
     def get_queryset(self):
         """
@@ -24,7 +30,9 @@ class CourseViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if user.is_superuser or user.groups.filter(name="Модераторы").exists():
             return Course.objects.all()
-        return Course.objects.filter(owner=user)
+        return Course.objects.filter(
+            Q(owner=user) | Q(subscriptions__user=user)
+        ).distinct()
 
     def perform_create(self, serializer):
         """
@@ -38,19 +46,19 @@ class CourseViewSet(viewsets.ModelViewSet):
         """
         # Если это суперпользователь — даем полный доступ без проверок
         if self.request.user and self.request.user.is_superuser:
-            return [IsAuthenticated()]
+            return [IsAdminUser()]
         # Создавать курсы может авторизованный пользователь, но не модератор
         if self.action == "create":
-            permission_classes = [IsAuthenticated, ~IsModer]
+            permission_classes = [~IsModer]
         # Просматривать список могут все авторизованные пользователи
         elif self.action == "list":
             permission_classes = [IsAuthenticated]
         # Детали и редактирование доступны модераторам ИЛИ владельцам курса
         elif self.action in ["retrieve", "update", "partial_update"]:
-            permission_classes = [IsAuthenticated, IsModer | IsOwner]
+            permission_classes = [IsModer | IsOwner]
         # Удалять курсы модератор не может, только владелец
         elif self.action == "destroy":
-            permission_classes = [IsAuthenticated, IsOwner, ~IsModer]
+            permission_classes = [IsOwner | ~IsModer]
         else:
             permission_classes = self.permission_classes
         return [permission() for permission in permission_classes]
@@ -67,7 +75,7 @@ class LessonCreateAPIView(generics.CreateAPIView):
 
     queryset = Lesson.objects.all()
     serializer_class = LessonSerializer
-    permission_classes = [IsAdminUser | (~IsModer & IsAuthenticated)]
+    permission_classes = (~IsModer,)
 
     def perform_create(self, serializer):
         """
@@ -85,10 +93,11 @@ class LessonListAPIView(generics.ListAPIView):
     """
 
     serializer_class = LessonSerializer
+    pagination_class = CustomPagination
 
     def get_queryset(self):
         user = self.request.user
-        if user.groups.filter(name="Модераторы").exists():
+        if user.is_superuser or user.groups.filter(name="Модераторы").exists():
             return Lesson.objects.all()
         return Lesson.objects.filter(owner=user)
 
@@ -99,6 +108,7 @@ class LessonUpdateAPIView(generics.UpdateAPIView):
 
     Позволяет полностью (PUT) или частично (PATCH) обновить данные урока
     по его идентификатору (ID).
+    Доступно модератору и владельцу.
     """
 
     queryset = Lesson.objects.all()
@@ -125,7 +135,28 @@ class LessonDestroyAPIView(generics.DestroyAPIView):
 
     Безвозвратно удаляет объект урока из базы данных по его идентификатору (ID).
     Связанный курс при этом не удаляется.
+    Удалять курсы модератор не может, только владелец.
     """
 
     queryset = Lesson.objects.all()
-    permission_classes = [IsAdminUser | (IsOwner & ~IsModer)]
+    permission_classes = (IsOwner | ~IsModer,)
+
+
+class SubscriptionAPIView(APIView):
+    """
+    Контроллер управления подпиской на курс (Установка / Снятие).
+    """
+
+    def post(self, request, *args, **kwargs):
+        user = self.request.user
+        course_id = self.request.data.get("course_id")
+        course_item = get_object_or_404(Course, id=course_id)
+
+        subs_item = Subscription.objects.filter(user=user, course=course_item)
+        if subs_item.exists():
+            subs_item.delete()
+            message = "Подписка успешно удалена"
+        else:
+            Subscription.objects.create(user=user, course=course_item)
+            message = "Подписка успешно добавлена"
+        return Response({"message": message})
