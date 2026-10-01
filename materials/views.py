@@ -8,9 +8,12 @@ from rest_framework.views import APIView
 
 from materials.models import Course, Lesson, Subscription
 from materials.pagination import CustomPagination
-from materials.schema import course_viewset_schema, lesson_list_schema, lesson_create_schema, lesson_update_schema, \
-    lesson_destroy_schema, lesson_retrieve_schema, subscription_manage_schema
-from materials.serializers import CourseSerializer, LessonSerializer, SubscriptionInputSerializer
+from materials.schema import (course_viewset_schema, lesson_create_schema,
+                              lesson_destroy_schema, lesson_list_schema,
+                              lesson_retrieve_schema, lesson_update_schema,
+                              subscription_manage_schema)
+from materials.serializers import (CourseSerializer, LessonSerializer,
+                                   SubscriptionInputSerializer)
 from users.permissions import IsModer, IsOwner
 
 
@@ -157,7 +160,9 @@ class LessonDestroyAPIView(generics.DestroyAPIView):
     """
 
     queryset = Lesson.objects.all()
-    serializer_class = LessonSerializer  # Добавлен сериализатор, чтобы Swagger его прочитал
+    serializer_class = (
+        LessonSerializer  # Добавлен сериализатор, чтобы Swagger его прочитал
+    )
     permission_classes = (IsOwner | ~IsModer,)
 
 
@@ -165,6 +170,7 @@ class SubscriptionAPIView(APIView):
     """
     Контроллер управления подпиской на курс (Установка / Снятие).
     """
+
     serializer_class = SubscriptionInputSerializer
 
     @subscription_manage_schema

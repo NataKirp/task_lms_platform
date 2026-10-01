@@ -54,6 +54,7 @@ class CourseSerializer(serializers.ModelSerializer):
             "lessons_count",
             "lessons",
             "is_subscribed",
+            "price",
         ]
 
     def get_lessons_count(self, course) -> int:
@@ -74,4 +75,5 @@ class CourseSerializer(serializers.ModelSerializer):
 
 class SubscriptionInputSerializer(serializers.Serializer):
     course_id = serializers.IntegerField(
-        help_text="Уникальный идентификатор (ID) курса, на который пользователь хочет подписаться или отписаться.")
+        help_text="Уникальный идентификатор (ID) курса, на который пользователь хочет подписаться или отписаться."
+    )

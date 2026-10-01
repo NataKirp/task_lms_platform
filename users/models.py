@@ -59,6 +59,7 @@ class Payment(models.Model):
     PAYMENT_METHODS = [
         ("cash", "Наличные"),
         ("bank_transfer", "Перевод на счет"),
+        ("stripe", "Оплата через Stripe"),
     ]
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -101,6 +102,28 @@ class Payment(models.Model):
         related_name="lesson_payments",
         verbose_name="Оплаченный урок",
         help_text="Укажите оплаченный урок (если применим)",
+    )
+    stripe_session_id = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        verbose_name="Id сессии",
+        help_text="Укажите Id сессии",
+    )
+    stripe_link = models.URLField(
+        max_length=500,
+        blank=True,
+        null=True,
+        verbose_name="Ссылка на оплату",
+        help_text="Укажите ссылку на оплату",
+    )
+    status = models.CharField(
+        max_length=20,
+        default="pending",
+        blank=True,
+        null=True,
+        verbose_name="Статус платежа",
+        help_text="Укажите статус платежа",
     )
 
     class Meta:

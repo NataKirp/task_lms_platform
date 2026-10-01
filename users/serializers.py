@@ -1,5 +1,7 @@
+from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
 
+from materials.models import Course
 from users.models import Payment, User
 
 
@@ -37,6 +39,17 @@ class PaymentSerializer(ModelSerializer):
     class Meta:
         model = Payment
         fields = "__all__"
+
+
+class StripePaymentCreateSerializer(serializers.Serializer):
+    course_id = serializers.IntegerField(
+        help_text="ID курса, который пользователь хочет через Stripe."
+    )
+
+    def validate_course_id(self, value):
+        if not Course.objects.filter(id=value).exists():
+            raise serializers.ValidationError("Курс с указанным ID не найден.")
+        return value
 
 
 class UserProfileSerializer(ModelSerializer):
