@@ -5,7 +5,7 @@ from users.models import Payment, User
 
 class UserRegisterSerializer(ModelSerializer):
     """
-    Сериализатор для РЕГИСТРАЦИИ пользователя.
+    Сериализатор для РЕГИСТРАЦИИ пользователя. Пароль автоматически хэшируется.
     """
 
     class Meta:

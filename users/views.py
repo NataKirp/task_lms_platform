@@ -1,15 +1,19 @@
 from django_filters.rest_framework import DjangoFilterBackend
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics
 from rest_framework.filters import OrderingFilter
-from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.viewsets import ModelViewSet
 
 from users.models import Payment, User
 from users.permissions import IsAccountOwner
+from users.schema import user_viewset_schema, payment_list_schema
 from users.serializers import (PaymentSerializer, UserProfileSerializer,
                                UserReadOnlySerializer, UserRegisterSerializer)
 
 
+@extend_schema(tags=["Пользователи"])
+@user_viewset_schema
 class UserViewSet(ModelViewSet):
     """
     ViewSet для управления пользователями (CRUD).
@@ -41,6 +45,7 @@ class UserViewSet(ModelViewSet):
         return super().get_permissions()
 
 
+@payment_list_schema
 class PaymentListAPIView(generics.ListAPIView):
     """
     Получение списка всех платежей.
@@ -51,6 +56,7 @@ class PaymentListAPIView(generics.ListAPIView):
 
     queryset = Payment.objects.all()
     serializer_class = PaymentSerializer
+
     filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_fields = ["payment_method", "course_paid", "single_lesson_paid"]
     ordering_fields = ["payment_date"]
