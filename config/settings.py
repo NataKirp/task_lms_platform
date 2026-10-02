@@ -9,6 +9,7 @@ load_dotenv(override=True)
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv("SECRET_KEY")
+STRIPE_API_KEY = os.getenv("STRIPE_API_KEY")
 
 DEBUG = True if os.getenv("DEBUG") == "True" else False
 
@@ -25,6 +26,7 @@ INSTALLED_APPS = [
     "phonenumber_field",
     "django_filters",
     "rest_framework_simplejwt",
+    "drf_spectacular",
     "users",
     "materials",
 ]
@@ -66,6 +68,9 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.LimitOffsetPagination",
+    "PAGE_SIZE": 10,
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 
 DATABASES = {
@@ -120,4 +125,26 @@ PHONENUMBER_DEFAULT_REGION = "RU"
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=25),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "LMS Образовательная платформа API",
+    "DESCRIPTION": """
+### 🎓 API Платформы Онлайн-Обучения (LMS)
+
+Данное API предоставляет полный набор инструментов для управления процессом дистанционного обучения, курсами, пользователями и оплатами.
+
+#### 🔑 Авторизация
+Для выполнения большинства запросов требуется JWT-авторизация. Получите токен на эндпоинте `/users/login/`, после чего нажмите кнопку **Authorize** вверху страницы Swagger и введите:
+`Authorization: Bearer <ваш_токен>`
+
+#### 📚 Основные модули системы:
+*   **Курсы и Уроки (`/materials/`):** Просмотр, создание и редактирование учебных материалов. Доступ к урокам разграничен в зависимости от прав пользователя (Модератор / Автор).
+*   **Пользователи (`/users/`):** Регистрация, профили, распределение ролей (Модераторы, Владельцы), платежи.
+
+⚠️ *Примечание для разработчиков: Для тестирования платежей используйте тестовые карты Stripe в режиме песочницы.*
+    """,
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "COMPONENT_SPLIT_REQUEST": True,
 }

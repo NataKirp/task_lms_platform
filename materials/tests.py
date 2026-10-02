@@ -206,11 +206,7 @@ class SubscriptionTestCase(APITestCase):
         response_data = response.json()
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(
-            response_data.get("message"), "Подписка успешно удалена"
-        )
+        self.assertEqual(response_data.get("message"), "Подписка успешно удалена")
         self.assertFalse(
-            Subscription.objects.filter(
-                user=self.user, course=self.course
-            ).exists()
+            Subscription.objects.filter(user=self.user, course=self.course).exists()
         )

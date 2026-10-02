@@ -54,15 +54,16 @@ class CourseSerializer(serializers.ModelSerializer):
             "lessons_count",
             "lessons",
             "is_subscribed",
+            "price",
         ]
 
-    def get_lessons_count(self, course):
+    def get_lessons_count(self, course) -> int:
         """
         Возвращает общее количество уроков, привязанных к данному курсу.
         """
         return course.lessons.count()
 
-    def get_is_subscribed(self, course):
+    def get_is_subscribed(self, course) -> bool:
         """
         Динамически определяет, подписан ли текущий пользователь на данный курс.
         """
@@ -70,3 +71,9 @@ class CourseSerializer(serializers.ModelSerializer):
         if not request or user.is_anonymous:
             return False
         return bool(Subscription.objects.filter(user=user, course=course).exists())
+
+
+class SubscriptionInputSerializer(serializers.Serializer):
+    course_id = serializers.IntegerField(
+        help_text="Уникальный идентификатор (ID) курса, на который пользователь хочет подписаться или отписаться."
+    )

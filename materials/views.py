@@ -1,4 +1,5 @@
 from django.db.models import Q  # Импортируем оператор Q для сложных запросов
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, viewsets
 from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
@@ -7,10 +8,17 @@ from rest_framework.views import APIView
 
 from materials.models import Course, Lesson, Subscription
 from materials.pagination import CustomPagination
-from materials.serializers import CourseSerializer, LessonSerializer
+from materials.schema import (course_viewset_schema, lesson_create_schema,
+                              lesson_destroy_schema, lesson_list_schema,
+                              lesson_retrieve_schema, lesson_update_schema,
+                              subscription_manage_schema)
+from materials.serializers import (CourseSerializer, LessonSerializer,
+                                   SubscriptionInputSerializer)
 from users.permissions import IsModer, IsOwner
 
 
+@extend_schema(tags=["Курсы"])
+@course_viewset_schema
 class CourseViewSet(viewsets.ModelViewSet):
     """
     Контроллер для управления курсами.
@@ -27,6 +35,10 @@ class CourseViewSet(viewsets.ModelViewSet):
         Динамическая фильтрация списка курсов.
         Модераторы и суперпользователи видят всё, обычные студенты — только свои курсы.
         """
+        # Защита от AnonymousUser при генерации схемы Swagger
+        if getattr(self, "swagger_fake_view", False):
+            return Course.objects.none()
+
         user = self.request.user
         if user.is_superuser or user.groups.filter(name="Модераторы").exists():
             return Course.objects.all()
@@ -64,6 +76,7 @@ class CourseViewSet(viewsets.ModelViewSet):
         return [permission() for permission in permission_classes]
 
 
+@lesson_create_schema
 class LessonCreateAPIView(generics.CreateAPIView):
     """
     Создание нового урока.
@@ -84,6 +97,7 @@ class LessonCreateAPIView(generics.CreateAPIView):
         serializer.save(owner=self.request.user)
 
 
+@lesson_list_schema
 class LessonListAPIView(generics.ListAPIView):
     """
     Получение списка всех уроков.
@@ -96,12 +110,17 @@ class LessonListAPIView(generics.ListAPIView):
     pagination_class = CustomPagination
 
     def get_queryset(self):
+        # Защита от AnonymousUser при генерации схемы Swagger
+        if getattr(self, "swagger_fake_view", False):
+            return Lesson.objects.none()
+
         user = self.request.user
         if user.is_superuser or user.groups.filter(name="Модераторы").exists():
             return Lesson.objects.all()
         return Lesson.objects.filter(owner=user)
 
 
+@lesson_update_schema
 class LessonUpdateAPIView(generics.UpdateAPIView):
     """
     Редактирование существующего урока.
@@ -116,6 +135,7 @@ class LessonUpdateAPIView(generics.UpdateAPIView):
     permission_classes = (IsModer | IsOwner,)
 
 
+@lesson_retrieve_schema
 class LessonRetrieveAPIView(generics.RetrieveAPIView):
     """
     Получение детальной информации о конкретном уроке.
@@ -129,6 +149,7 @@ class LessonRetrieveAPIView(generics.RetrieveAPIView):
     permission_classes = (IsModer | IsOwner,)
 
 
+@lesson_destroy_schema
 class LessonDestroyAPIView(generics.DestroyAPIView):
     """
     Удаление урока.
@@ -139,6 +160,9 @@ class LessonDestroyAPIView(generics.DestroyAPIView):
     """
 
     queryset = Lesson.objects.all()
+    serializer_class = (
+        LessonSerializer  # Добавлен сериализатор, чтобы Swagger его прочитал
+    )
     permission_classes = (IsOwner | ~IsModer,)
 
 
@@ -147,6 +171,9 @@ class SubscriptionAPIView(APIView):
     Контроллер управления подпиской на курс (Установка / Снятие).
     """
 
+    serializer_class = SubscriptionInputSerializer
+
+    @subscription_manage_schema
     def post(self, request, *args, **kwargs):
         user = self.request.user
         course_id = self.request.data.get("course_id")
