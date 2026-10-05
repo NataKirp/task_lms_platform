@@ -16,8 +16,8 @@ from materials.schema import (course_viewset_schema, lesson_create_schema,
                               subscription_manage_schema)
 from materials.serializers import (CourseSerializer, LessonSerializer,
                                    SubscriptionInputSerializer)
-from users.permissions import IsModer, IsOwner
 from materials.tasks import send_course_update_email
+from users.permissions import IsModer, IsOwner
 
 
 @extend_schema(tags=["Курсы"])
