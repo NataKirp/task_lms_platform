@@ -121,6 +121,11 @@ MAILERS = {
     },
 }
 
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+EMAIL_HOST = "localhost"
+
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL")
+
 AUTH_USER_MODEL = "users.User"
 
 PHONENUMBER_DEFAULT_REGION = "RU"
