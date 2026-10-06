@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from django.db.models import Q  # Импортируем оператор Q для сложных запросов
 from drf_spectacular.utils import extend_schema
 from rest_framework import generics, viewsets
@@ -14,6 +16,7 @@ from materials.schema import (course_viewset_schema, lesson_create_schema,
                               subscription_manage_schema)
 from materials.serializers import (CourseSerializer, LessonSerializer,
                                    SubscriptionInputSerializer)
+from materials.tasks import send_course_update_email
 from users.permissions import IsModer, IsOwner
 
 
@@ -75,6 +78,19 @@ class CourseViewSet(viewsets.ModelViewSet):
             permission_classes = self.permission_classes
         return [permission() for permission in permission_classes]
 
+    def perform_update(self, serializer):
+        """
+        Сохраняет изменения курса и автоматически рассылает
+        уведомления об обновлении всем подписанным пользователям через Celery.
+        """
+        course_item = serializer.save()
+        subs_items = Subscription.objects.filter(course=course_item)
+
+        if subs_items.exists():
+            for sub in subs_items:
+                if sub.user.email:
+                    send_course_update_email.delay(sub.user.email, course_item.name)
+
 
 @lesson_create_schema
 class LessonCreateAPIView(generics.CreateAPIView):
@@ -82,8 +98,9 @@ class LessonCreateAPIView(generics.CreateAPIView):
     Создание нового урока.
 
     Принимает параметры урока (название, описание, превью, ссылка на видео)
-    и привязывает его к указанному курсу. Доступно любому авторизованному
-    пользователю, кроме модераторов.
+    и привязывает его к указанному курсу. Автоматически рассылает
+    уведомления всем подписчикам этого курса через Celery.
+    Доступно любому авторизованному пользователю, кроме модераторов.
     """
 
     queryset = Lesson.objects.all()
@@ -92,9 +109,20 @@ class LessonCreateAPIView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         """
-        Автоматически назначает текущего авторизованного пользователя владельцем урока.
+        Автоматически назначает текущего авторизованного пользователя владельцем урока и рассылает
+        уведомления всем подписчикам курса, в который входит урок, через Celery.
         """
-        serializer.save(owner=self.request.user)
+        lesson_item = serializer.save(owner=self.request.user)
+        course_item = lesson_item.course
+
+        if course_item:
+            course_item.save()
+            subs_items = Subscription.objects.filter(course=course_item)
+
+            if subs_items.exists():
+                for sub in subs_items:
+                    if sub.user.email:
+                        send_course_update_email.delay(sub.user.email, course_item.name)
 
 
 @lesson_list_schema
@@ -127,12 +155,30 @@ class LessonUpdateAPIView(generics.UpdateAPIView):
 
     Позволяет полностью (PUT) или частично (PATCH) обновить данные урока
     по его идентификатору (ID).
+    При изменении урока автоматически уведомляет подписчиков курса, в который входит урок, через Celery.
     Доступно модератору и владельцу.
     """
 
     queryset = Lesson.objects.all()
     serializer_class = LessonSerializer
     permission_classes = (IsModer | IsOwner,)
+
+    def perform_update(self, serializer):
+        """
+        Если урок входит в курс, сохраняет изменения курса и автоматически рассылает
+        уведомления об обновлении всем подписанным пользователям через Celery.
+        """
+        lesson_item = serializer.save()
+        course_item = lesson_item.course
+
+        if course_item:
+            course_item.save()
+            subs_items = Subscription.objects.filter(course=course_item)
+
+            if subs_items.exists():
+                for sub in subs_items:
+                    if sub.user.email:
+                        send_course_update_email.delay(sub.user.email, course_item.name)
 
 
 @lesson_retrieve_schema
