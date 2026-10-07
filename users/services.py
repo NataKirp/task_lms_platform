@@ -1,6 +1,5 @@
 import stripe
 from django.shortcuts import get_object_or_404
-from requests import session
 
 from config.settings import STRIPE_API_KEY
 from materials.models import Course

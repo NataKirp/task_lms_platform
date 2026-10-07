@@ -1,5 +1,4 @@
 from rest_framework import permissions
-from rest_framework.decorators import permission_classes
 
 
 class IsModer(permissions.BasePermission):

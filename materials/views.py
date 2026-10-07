@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from django.db.models import Q  # Импортируем оператор Q для сложных запросов
 from drf_spectacular.utils import extend_schema
 from rest_framework import generics, viewsets
