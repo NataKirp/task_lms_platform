@@ -10,6 +10,11 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+  env:
+    SECRET_KEY: test-secret-key-for-ci-only
+    DEBUG: "False"
+    DEFAULT_FROM_EMAIL: noreply@test.local
+
     steps:
       - name: Check out code
         uses: actions/checkout@v4
