@@ -51,7 +51,8 @@ payment_list_schema = extend_schema(
 )
 payment_stripe_schema = extend_schema(
     summary="Создание сессии оплаты курса через Stripe",
-    description="Принимает ID курса, генерирует платежную ссылку Stripe, возвращает данные платежа и регистрирует транзакцию в базе данных.",
+    description="Принимает ID курса, генерирует платежную ссылку Stripe, "
+                "возвращает данные платежа и регистрирует транзакцию в базе данных.",
     responses={201: PaymentSerializer},
     examples=[
         OpenApiExample(
@@ -79,6 +80,7 @@ payment_stripe_schema = extend_schema(
 )
 payment_stripe_status_schema = extend_schema(
     summary="Проверка и обновление актуального статуса платежа через Stripe",
-    description="При просмотре деталей платежа обращается к Stripe, проверяет статус транзакции и обновляет поле status в базе данных.",
+    description="При просмотре деталей платежа обращается к Stripe, проверяет статус транзакции "
+                "и обновляет поле status в базе данных.",
     tags=["Платежи"],
 )

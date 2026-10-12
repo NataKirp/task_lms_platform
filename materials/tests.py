@@ -169,6 +169,7 @@ class CourseTestCase(APITestCase):
                         }
                     ],
                     "is_subscribed": False,
+                    "price": "0.00",
                 }
             ],
         }

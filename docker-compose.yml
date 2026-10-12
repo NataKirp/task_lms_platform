@@ -1,28 +1,11 @@
 services:
-  migrate:
-    build: .
-    command: sh -c "python manage.py migrate --noinput"
-    volumes:
-      - .:/app
-    env_file:
-      - .env
-    environment:
-      - DB_HOST=db
-      - DB_PORT=5432
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/1
-    depends_on:
-      db:
-        condition: service_healthy
-
   web:
-    build: .
-    command: sh -c "python manage.py runserver 0.0.0.0:8000"
+    image: ${DOCKER_HUB_USERNAME}/lms:${IMAGE_TAG}
     volumes:
-      - .:/app
+      - static_volume:/app/staticfiles
       - media_volume:/app/media
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"
     env_file:
       - .env
     environment:
@@ -35,8 +18,20 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      migrate:
-        condition: service_completed_successfully
+    restart: unless-stopped
+
+  nginx:
+    build:
+      context: ./nginx
+    ports:
+      - "80:80"
+    volumes:
+      - static_volume:/app/staticfiles:ro
+      - media_volume:/app/media:ro
+    depends_on:
+      web:
+        condition: service_started
+    restart: unless-stopped
 
   db:
     image: postgres:16.0
@@ -49,11 +44,12 @@ services:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
+      test: [ "CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}" ]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
       start_period: 10s
+    restart: unless-stopped
 
   redis:
     image: redis:7-alpine
@@ -62,12 +58,11 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
   celery:
-    build: .
+    image: ${DOCKER_HUB_USERNAME}/lms:${IMAGE_TAG}
     command: celery -A config worker -l INFO
-    volumes:
-      - .:/app
     env_file:
       - .env
     environment:
@@ -79,14 +74,11 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      migrate:
-        condition: service_completed_successfully
+    restart: unless-stopped
 
   celery-beat:
-    build: .
+    image: ${DOCKER_HUB_USERNAME}/lms:${IMAGE_TAG}
     command: celery -A config beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler
-    volumes:
-      - .:/app
     env_file:
       - .env
     environment:
@@ -98,9 +90,9 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      migrate:
-        condition: service_completed_successfully
+    restart: unless-stopped
 
 volumes:
   postgres_data:
   media_volume:
+  static_volume:

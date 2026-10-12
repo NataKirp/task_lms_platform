@@ -1,8 +1,6 @@
 from drf_spectacular.utils import (OpenApiExample, extend_schema,
-                                   extend_schema_view, inline_serializer)
-from rest_framework import serializers, status
-
-from materials.serializers import SubscriptionInputSerializer
+                                   extend_schema_view)
+from rest_framework import status
 
 course_viewset_schema = extend_schema_view(
     create=extend_schema(summary="Создать новый курс"),

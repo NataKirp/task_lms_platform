@@ -1,6 +1,10 @@
 # Платформа онлайн-обучения
 
-REST API для платформы онлайн-обучения на Django REST Framework. Позволяет управлять курсами и уроками, оформлять подписки, принимать оплату через Stripe и рассылать уведомления подписчикам.
+REST API для платформы онлайн-обучения на Django REST Framework. Позволяет управлять курсами и уроками, 
+оформлять подписки, принимать оплату через Stripe и рассылать уведомления подписчикам.
+
+**Production:** http://45.132.177.136
+**Репозиторий:** https://github.com/NataKirp/task_lms_platform.git
 
 ## Содержание
 
@@ -14,6 +18,7 @@ REST API для платформы онлайн-обучения на Django RES
 - [Управляющие команды](#управляющие-команды)
 - [Тестирование](#тестирование)
 - [Роли и права доступа](#роли-и-права-доступа)
+- [CI/CD и деплой](#cicd-и-деплой)
 
 ## Возможности
 
@@ -26,18 +31,21 @@ REST API для платформы онлайн-обучения на Django RES
 - **OpenAPI-документация** — Swagger UI и ReDoc через `drf-spectacular`.
 - **Валидация ссылок** — в уроках разрешены только ссылки на YouTube.
 - **Пагинация** — кастомная с ограничением размера страницы.
+- **Автоматический деплой** — GitHub Actions → Docker Hub → сервер по SSH.
 
 ## Технологии
 
 | Компонент | Версия |
 |---|---|
 | Python | 3.12 |
-| Django | 5.2 |
+| Django | 6.0.7 |
 | Django REST Framework | — |
+| Gunicorn | — |
+| Nginx | 1.27-alpine |
 | PostgreSQL | 16 |
 | Redis | 7 |
 | Celery | 5.6 |
-| Poetry | — |
+| Poetry | 2.2.1 |
 | Stripe SDK | — |
 | drf-spectacular | — |
 | djangorestframework-simplejwt | — |
@@ -49,35 +57,48 @@ REST API для платформы онлайн-обучения на Django RES
 
 ```
 task_lms_platform/
-├── config/                 # Настройки Django, celery, urls
+├── .github/
+│   └── workflows/
+│       └── ci.yml              # test → lint → build → deploy
+├── config/                     # Настройки Django
+│   ├── __init__.py             # Импорт Celery-приложения
 │   ├── settings.py
 │   ├── urls.py
 │   ├── celery.py
-│   ├── wsgi.py
-│   └── asgi.py
-├── users/                  # Пользователи, платежи, аутентификация
-│   ├── models.py           # User, Payment
+│   └── wsgi.py
+├── nginx/                      # Конфигурация Nginx
+│   ├── Dockerfile
+│   └── nginx.conf
+├── users/                      # Пользователи, платежи
+│   ├── models.py               # User, Payment
 │   ├── serializers.py
 │   ├── views.py
 │   ├── urls.py
-│   ├── permissions.py      # IsModer, IsOwner, IsAccountOwner
-│   ├── services.py         # Интеграция со Stripe
-│   ├── tasks.py            # Деактивация неактивных пользователей
+│   ├── permissions.py          # IsModer, IsOwner, IsAccountOwner
+│   ├── services.py             # Интеграция со Stripe
+│   ├── tasks.py                # Деактивация неактивных пользователей
 │   └── management/commands/fill_db.py
-├── materials/              # Курсы, уроки, подписки
-│   ├── models.py           # Course, Lesson, Subscription
+├── materials/                  # Курсы, уроки, подписки
+│   ├── models.py               # Course, Lesson, Subscription
 │   ├── serializers.py
 │   ├── views.py
 │   ├── urls.py
-│   ├── validators.py       # validate_youtube_only
+│   ├── validators.py           # validate_youtube_only
 │   ├── pagination.py
-│   ├── tasks.py            # Рассылка обновлений
+│   ├── schema.py               # OpenAPI-схемы
+│   ├── tasks.py                # Рассылка обновлений
 │   └── tests.py
+├── media/                      # Загруженные файлы (не в git)
 ├── Dockerfile
 ├── docker-compose.yml
 ├── pyproject.toml
 ├── poetry.lock
-├── .env.example
+├── .env.sample                 # Шаблон переменных окружения
+├── .env                        # Локальный файл (в .gitignore)
+├── .flake8
+├── .gitignore
+├── .dockerignore
+├── .coveragerc
 └── README.md
 ```
 
@@ -96,37 +117,43 @@ task_lms_platform/
    cd task_lms_platform
    ```
 
-2. Создать `.env` на основе `.env.example` и заполнить значения (см. [Переменные окружения](#переменные-окружения)).
+2. Создать `.env` на основе `.env.sample` и заполнить значения (см. [Переменные окружения](#переменные-окружения)):
+   ```bash
+   cp .env.sample .env
+   ```
 
 3. Собрать и запустить сервисы:
    ```bash
    docker compose up --build
    ```
 
-   Compose сам:
-   - поднимет `db` и `redis` с healthcheck'ами,
-   - выполнит миграции через сервис `migrate`,
-   - запустит `web`, `celery`, `celery-beat` **после** успешных миграций.
+   Compose поднимет `db` и `redis` с healthcheck'ами, затем `web`, `celery`, `celery-beat` и `nginx`.
 
-4. Создать суперпользователя:
+4. Применить миграции и собрать статику:
+   ```bash
+   docker compose exec web python manage.py migrate --noinput
+   docker compose exec web python manage.py collectstatic --noinput
+   ```
+
+5. Создать суперпользователя:
    ```bash
    docker compose exec web python manage.py createsuperuser
    ```
 
-5. (Опционально) Заполнить БД тестовыми данными:
+6. (Опционально) Заполнить БД тестовыми данными:
    ```bash
    docker compose exec web python manage.py fill_db
    ```
 
-6. Открыть сервисы:
+7. Открыть сервисы:
 
    | URL | Назначение |
    |---|---|
-   | http://localhost:8000/ | API |
-   | http://localhost:8000/admin/ | Django admin |
-   | http://localhost:8000/swagger/ | Swagger UI |
-   | http://localhost:8000/redoc/ | ReDoc |
-   | http://localhost:8000/schema/ | OpenAPI-схема (raw) |
+   | http://localhost/ | API (через Nginx) |
+   | http://localhost/admin/ | Django admin |
+   | http://localhost/swagger/ | Swagger UI |
+   | http://localhost/redoc/ | ReDoc |
+   | http://localhost/schema/ | OpenAPI-схема (raw) |
 
 ### Остановка и удаление
 
@@ -165,37 +192,6 @@ docker compose down -v    # остановить + удалить том с БД
    celery -A config beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler
    ```
 
-## Переменные окружения
-
-Пример `.env.example`:
-
-```env
-# Django
-SECRET_KEY=your-secret-key-here
-DEBUG=True
-ALLOWED_HOSTS=localhost,127.0.0.1
-
-# PostgreSQL
-POSTGRES_DB=lms
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=postgres
-DB_HOST=db
-DB_PORT=5432
-
-# Stripe
-STRIPE_API_KEY=sk_test_...
-
-# Celery
-CELERY_BROKER_URL=redis://redis:6379/0
-CELERY_RESULT_BACKEND=redis://redis:6379/1
-
-# Email
-DEFAULT_FROM_EMAIL=noreply@lms.local
-EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend
-```
-
-> **Важно:** в `.env` для Docker-режима хосты `db` и `redis` — это имена сервисов из `docker-compose.yml`. Для локального запуска используйте `localhost` / `127.0.0.1`.
-
 ## API
 
 Все эндпоинты, кроме регистрации и логина, требуют JWT-токен в заголовке:
@@ -215,9 +211,9 @@ Authorization: Bearer <access_token>
 **Пример логина:**
 
 ```bash
-curl -X POST http://localhost:8000/users/login/ \
+curl -X POST http://45.132.177.136/users/login/ \
   -H "Content-Type: application/json" \
-  -d '{"email": "user@example.com", "password": "pass"}' -k
+  -d '{"email": "user@example.com", "password": "pass"}'
 ```
 
 ### Пользователи
@@ -305,6 +301,7 @@ docker compose exec web python manage.py fill_db --noinput   # без подтв
 ```bash
 docker compose exec web python manage.py migrate
 docker compose exec web python manage.py createsuperuser
+docker compose exec web python manage.py collectstatic --noinput
 docker compose exec web python manage.py spectacular --file /tmp/schema.yml  # проверка OpenAPI
 ```
 
@@ -339,10 +336,83 @@ poetry run python manage.py test
 - `IsOwner` — проверяет, что `obj.owner == request.user`
 - `IsAccountOwner` — для редактирования/удаления собственного профиля
 
+## CI/CD и деплой
+
+### Pipeline
+
+Workflow `.github/workflows/ci.yml` запускается на `push` и `pull_request` и проходит четыре стадии:
+
+```
+test → lint → build → deploy
+```
+
+| Job | Что делает |
+|---|---|
+| `test` | `python manage.py test` (SQLite, без внешних сервисов) |
+| `lint` | Проверка кода через `flake8` |
+| `build` | Сборка Docker-образа и push в Docker Hub с тегом `${{ github.sha }}` |
+| `deploy` | Только при `push` в `main`: SSH на сервер, `git pull`, миграции, `collectstatic`, `docker compose up -d` |
+
+Каждая стадия зависит от предыдущей через `needs`, ошибка на любом шаге останавливает pipeline.
+
+### Сервер
+
+- **Провайдер:** Cloud.ru, Ubuntu 24.04
+- **IP:** `45.132.177.136`
+- **Директория проекта:** `/var/www/lms`
+- **Пользователь:** `user1`
+- **Стек в проде:** Gunicorn (за Nginx), PostgreSQL 16, Redis 7, Celery, Celery Beat
+
+Наружу открыты только порты **22** (SSH) и **80** (HTTP). `web`, `db` и `redis` доступны только внутри docker-сети 
+через `expose`.
+
+### GitHub Secrets
+
+Настроены в **Settings → Secrets and variables → Actions**:
+
+| Secret | Назначение |
+|---|---|
+| `SSH_KEY` | Приватный SSH-ключ для подключения к серверу |
+| `SSH_USER` | Имя пользователя на сервере (`user1`) |
+| `SERVER_IP` | IP-адрес сервера (`45.132.177.136`) |
+| `DEPLOY_DIR` | Путь к директории проекта (`/var/www/lms`) |
+| `DOCKER_HUB_USERNAME` | Логин на Docker Hub |
+| `DOCKER_HUB_ACCESS_TOKEN` | Access token Docker Hub |
+
+### Переменные окружения на сервере
+
+Файл `/var/www/lms/.env` создаётся вручную и не коммитится. Значения — по образцу `.env.sample`. Для прода:
+
+```env
+DEBUG=False
+ALLOWED_HOSTS=45.132.177.136
+```
+
+### Ручной деплой (если нужно)
+
+```bash
+ssh user1@45.132.177.136
+cd /var/www/lms
+
+git fetch origin main
+git reset --hard origin/main
+
+docker compose pull
+docker compose run --rm -T web python manage.py migrate --noinput
+docker compose run --rm -T web python manage.py collectstatic --noinput
+docker compose up -d --remove-orphans
+docker image prune -f
+
+docker compose ps
+```
+
+### Локальная сборка образа
+
+```bash
+docker build -t <dockerhub-username>/lms:latest .
+docker push <dockerhub-username>/lms:latest
+```
+
 ## Лицензия
 
 Учебный проект. Свободное использование в образовательных целях.
-
----
-
-Если что-то не работает — создайте issue или напишите в обсуждениях репозитория.

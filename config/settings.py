@@ -1,4 +1,5 @@
 import os
+import sys
 from datetime import timedelta
 from pathlib import Path
 
@@ -11,9 +12,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv("SECRET_KEY")
 STRIPE_API_KEY = os.getenv("STRIPE_API_KEY")
 
-DEBUG = os.getenv('DEBUG', 'False').lower() in ('true', '1', 'yes', 'on')
+DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1", "yes", "on")
 
-ALLOWED_HOSTS = ['*'] if DEBUG else os.getenv('ALLOWED_HOSTS', '').split(',')
+ALLOWED_HOSTS = ["*"] if DEBUG else os.getenv("ALLOWED_HOSTS", "").split(",")
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -141,14 +142,17 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": """
 ### 🎓 API Платформы Онлайн-Обучения (LMS)
 
-Данное API предоставляет полный набор инструментов для управления процессом дистанционного обучения, курсами, пользователями и оплатами.
+Данное API предоставляет полный набор инструментов для управления процессом дистанционного обучения, курсами,
+пользователями и оплатами.
 
 #### 🔑 Авторизация
-Для выполнения большинства запросов требуется JWT-авторизация. Получите токен на эндпоинте `/users/login/`, после чего нажмите кнопку **Authorize** вверху страницы Swagger и введите:
+Для выполнения большинства запросов требуется JWT-авторизация. Получите токен на эндпоинте `/users/login/`,
+после чего нажмите кнопку **Authorize** вверху страницы Swagger и введите:
 `Authorization: Bearer <ваш_токен>`
 
 #### 📚 Основные модули системы:
-*   **Курсы и Уроки (`/materials/`):** Просмотр, создание и редактирование учебных материалов. Доступ к урокам разграничен в зависимости от прав пользователя (Модератор / Автор).
+*   **Курсы и Уроки (`/materials/`):** Просмотр, создание и редактирование учебных материалов. Доступ к урокам
+разграничен в зависимости от прав пользователя (Модератор / Автор).
 *   **Пользователи (`/users/`):** Регистрация, профили, распределение ролей (Модераторы, Владельцы), платежи.
 
 ⚠️ *Примечание для разработчиков: Для тестирования платежей используйте тестовые карты Stripe в режиме песочницы.*
@@ -173,3 +177,11 @@ CELERY_BEAT_SCHEDULE = {
         "schedule": timedelta(days=1),
     }
 }
+
+if "test" in sys.argv:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "test_db.sqlite3",
+        }
+    }
