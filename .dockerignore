@@ -1,0 +1,49 @@
+# Бит-код Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Виртуальные окружения
+.venv/
+venv/
+env/
+ENV/
+
+# Дистрибутивы и упаковка
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+
+# Тесты
+.testmondata
+.pytest_cache/
+htmlcov/
+.coverage
+coverage.xml
+.tox/
+
+# Конфигурации Docker
+docker-compose*.yml
+compose*.yaml
+.dockerignore
+
+# Универсальный блок
+.git/
+.env
+.env.*
+.idea
+.vscode
+
+# Прочее
+media/
